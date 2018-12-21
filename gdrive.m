@@ -33,10 +33,13 @@ classdef gdrive
         end
         
         function v = get.about(o)
+            % Return a struct with information on the current connection to
+            % Google Drive 
             v =  o.do('about');
         end
         
         function v=get.config(o)
+            % Return the authentication information.
             v = jsondecode(fileread(fullfile(o.configDir,"token_v2.json")));
         end
     end
