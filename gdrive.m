@@ -333,7 +333,7 @@ classdef gdrive
             if strcmpi(str(end),'/')
                 str(end)=''; % Remove trailing /
             end
-            dirs = split(str,'/');
+            dirs = strsplit(str,'/');
             for i=1:numel(dirs)
                 if isempty(dirs{i}) || strcmp(dirs{i},'My Drive')
                     parentID = 'root';
@@ -421,7 +421,7 @@ classdef gdrive
             % OUTPUT
             % result - a struct reprensenting the information in output
             %
-            lines = split(output,newline);
+            lines = strsplit(output,newline);
             out = cellfun(@isempty,lines);
             lines(out)=[];
             lines(1) = []; % Header
@@ -442,7 +442,7 @@ classdef gdrive
                 case 'ABOUT'
                     result = gdrive.lines2Struct(lines);
                 case 'MKDIR'
-                    tmp  = split(output);
+                    tmp  = strsplit(output);
                     result.id = tmp{2};
                 case 'INFO'
                     result = gdrive.lines2Struct(lines);
@@ -458,7 +458,7 @@ classdef gdrive
             % on each line. Here we map those to struct.tag = value.
             % All tags are forced lower case. Extraneous spaces are removed
             % from values.
-            tmp = cellfun(@(x) split(x,':'),log,'UniformOutput',false);
+            tmp = cellfun(@(x) strsplit(x,':'),log,'UniformOutput',false);
             fields = cellfun(@(x)(strrep(lower(x{1}),' ','')),tmp,'uniformoutput',false);
             values = cellfun(@(x)(strip(x{2})),tmp,'uniformoutput',false);
             args = cell(1,2*numel(fields));
