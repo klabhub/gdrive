@@ -294,6 +294,83 @@ classdef gdrive
             result = o.do(cmd ,[recursive ' ' parent ' ' trg ],fullfile(pth,[file ext]));
         end
         
+        
+        function result = get(o,src,dst,overwrite)
+            % Copy a file or directory from Google Drive to a local dir.
+            % INPUT
+            % src = Google file/dir
+            % dst = local file/dir.
+            % overwrite = [false]. Set to true to overwrite the
+            %                   destination.
+            % OUTPUT
+            % log = log of the gdrive interaction
+            %
+            % EXAMPLES
+            %
+            % Directories are always created inside the dst directory.
+            % So you probably dont want 
+            % get('/docs','/docs') but get('/docs','/');
+            %
+            % get('/docs','/myDir/')  -> will create /myDir/docs
+            % get('myFile','/docs') -> will create /docs/myFile.
+            % get('myFile','/docs/myFile') -> will create /docs/myFile.
+            % get('myFile','/docs/myFile',true) -> will update/overwrite /docs/myFile.
+            %
+            % There is currently no way to rename a dir on copy (i.e.
+            % put('a','/b') will create /b/a (if b is a folder) or fail. It
+            % will not create /b.
+            
+            if nargin <4
+                overwrite = false;
+            end
+            
+            dstIsFile = exist(dst,'file') ==2;
+            dstIsDir = strcmpi(dst(end),'/');
+            
+            if dstIsFile && dstIsDir
+                error([dst ' already exists and is a file. Remove it first to create a target directory']);
+            end
+            
+           
+            if (exist(dst,'file') || exist(dst,'dir') )&& ~overwrite
+                error([dst ' already exists. Use overwrite=true to overwrite']);
+            end
+            
+            [pth,file,ext] = fileparts(dst);
+            if isempty(pth) || strcmp(pth,'.')
+                pth = pwd;
+            end
+            
+            % Check on drive
+            [srcInfo,~] = info(o,src);
+            if isempty(srcInfo.id)
+                % src does not exist 
+                error([src  ' does not exist. Nothing to get']);
+            else
+                srcIsFile = ~strcmpi(srcInfo.mime,'application/vnd.google-apps.folder');                
+            end
+            
+            dstPath = fullfile(pth,[file ext]);
+            if srcIsFile 
+                recursive ='';
+            else %src is a dir 
+               if dstIsFile 
+                    error(['Cannot copy dir ' src ' onto file ' dst ]);
+               else                    
+                    recursive = '--recursive';
+                end
+            end
+            
+            if overwrite
+                force = '--force ';
+            else
+                force = '';
+            end
+            
+            result = o.do('download',[force ' ' recursive ' --path ' dstPath ], srcInfo.id);
+                
+        end
+        
         function result = list(o,str,includeTrash)
             % List all files on Google Drive that contain 'str'.
             % INPUT
@@ -446,8 +523,8 @@ classdef gdrive
                     result.id = tmp{2};
                 case 'INFO'
                     result = gdrive.lines2Struct(lines);
-                case {'UPLOAD','UPDATE','SYNC UPLOAD','SYNC DOWNLOAD'}
-                    result.log = output;
+                case {'UPLOAD','UPDATE','SYNC UPLOAD','SYNC DOWNLOAD','DOWNLOAD'}
+                    result.log = output;                    
                 otherwise
                     error(['Converting gdrive command ' src ' output to a struct has not been implementd yet.']);
             end            
